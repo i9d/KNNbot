@@ -212,7 +212,8 @@ def about(message):
 @bot.message_handler(commands=['help'])
 def help(message):
     help_message = "Я могу зарегистрировать пользователя у себя в базе данных. Чтобы зарегистрироваться напиши" \
-                   " /reg \nЧтобы проверить регистрацию, напишите /info \nНапишите /about, чтобы узнать о проекте" \
+                   " /reg \nЧтобы проверить регистрацию, напишите /info " \
+                   "\nНапишите /about, чтобы узнать о проекте" \
                    " или /team_info, чтобы узнать о разработчиках"
     bot.send_message(message.chat.id, help_message)
 
