@@ -1,3 +1,5 @@
 pyTelegramBotAPI
 Image
-pymysql
+pymysql~=0.10.1
+
+Pillow~=8.0.1
