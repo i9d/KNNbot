@@ -5,8 +5,8 @@ import pymysql
 # port = 3306
 # db = 'sql7373867'
 host = 'localhost'
-user = 'root'
-password = ''
+user = 'admin'
+password = '123456'
 port = 3306
 db = 'chatdb'
 charset = 'utf8mb4'
