@@ -1,28 +1,55 @@
 import db
 import config
 from datetime import datetime
+import capcha
 
-
-def register(message):
+def register(message, bot):
     user_id = message.from_user.id
     name = message.text.replace('/reg ', '')
     s = ".,:;!_*-+()/\`'#%&"
     for char in s:
         if char in name:
-            result = "В имени есть недопустимые символы. Используйте только латиницу, кириллицу и знак пробела"
+            result = "В имени есть недопустимые символы. Используйте только латиницу, кириллицу, цифры и знак пробела"
             return result
     if not isExistID(user_id):
         if not isExistName(name):
             _date = datetime.today().strftime('%Y-%m-%d')
             query = "INSERT INTO `users`(`TELEGRAM_ID`, `NAME`, `Created`, `LastOffense`) VALUES(%s, %s, %s, %s)"
             db.update(query, (user_id, name, _date, _date))
-            result = "Вы зарегистрированы как " + name
+            bot.send_message(message.chat.id, 'Вы зарегистрированы как ' + name)
+            bot.send_message(message.chat.id, 'Теперь Вам нужно сделать учетную запись активной')
+            bot.send_message(message.chat.id, 'Введите символы с картинки ниже')
+            updateCapcha(message, bot)
+
         else:
             result = "Имя " + name + " уже занято"
+            bot.send_message(message.chat.id, result)
     else:
         result = "Вы уже зарегистрированы."
-    return result
+        bot.send_message(message.chat.id, result)
 
+
+def updateCapcha(message, bot):
+    _capcha = capcha.CaptchaGenerator(message.chat.id, bot)
+    query = "UPDATE `users` SET `Capcha` = %s WHERE TELEGRAM_ID = %s"
+    db.update(query, (_capcha, message.from_user.id))
+
+
+def isActive(user_id):
+    query = "SELECT `IsActive` FROM `users` WHERE `TELEGRAM_ID` = %s"
+    result = db.select(query, user_id)
+    return result['IsActive']
+
+
+def makeActive(user_id):
+    query = "UPDATE `users` SET `IsActive` = 1, `Capcha` = '' WHERE TELEGRAM_ID = %s"
+    db.update(query, user_id)
+
+
+def getHash(user_id):
+    query = "SELECT `Capcha` FROM `users` WHERE `TELEGRAM_ID` = %s"
+    result = db.select(query, user_id)
+    return result['Capcha']
 
 def isExistID(data):
     query = "SELECT EXISTS(SELECT * FROM `users` WHERE `TELEGRAM_ID` = %s)"
@@ -34,10 +61,7 @@ def isExistID(data):
 def isExistName(data):
     query = "SELECT EXISTS(SELECT * FROM `users` WHERE `NAME` = %s)"
     _isExist = "EXISTS(SELECT * FROM `users` WHERE `NAME` = '" + str(data) + "')"
-    print(_isExist)
     result = db.select(query, data)
-    print(result)
-    print(result[_isExist])
     return result[_isExist]
 
 
@@ -53,10 +77,22 @@ def isKicked(user_id):
     return result['isKicked']
 
 
-def isRole(user_id, role):
-    query = "SELECT %s FROM `users` WHERE `TELEGRAM_ID` = %s"
-    result = db.select(query, (role, user_id))
-    return result[role]
+def isRoleKick(user_id):
+    query = "SELECT `RoleKick` FROM `users` WHERE `TELEGRAM_ID` = %s"
+    result = db.select(query, user_id)
+    return result['RoleKick']
+
+
+def isRoleBanMedia(user_id):
+    query = "SELECT `RoleBanMedia` FROM `users` WHERE `TELEGRAM_ID` = %s"
+    result = db.select(query, user_id)
+    return result['RoleBanMedia']
+
+
+def isRoleReadOnly(user_id):
+    query = "SELECT `RoleReadOnly` FROM `users` WHERE `TELEGRAM_ID` = %s"
+    result = db.select(query, user_id)
+    return result['RoleReadOnly']
 
 
 def setPoint(message):
@@ -172,8 +208,6 @@ def info(message):
     return result
 
 
-
-
 def canKick(message):
     if hasattr(message.reply_to_message, 'from_user'):
         if isGOD(message.from_user.id):
@@ -230,7 +264,7 @@ def canReadOnly(message):
                 db.update(query, user_id)
                 result = 'Пользователь больше не может ставить режим ReadOnly'
             else:
-                query = "UPDATE `users` SET `RoleKick` = 1 WHERE TELEGRAM_ID = %s"
+                query = "UPDATE `users` SET `RoleReadOnly` = 1 WHERE TELEGRAM_ID = %s"
                 db.update(query, user_id)
                 result = 'Пользователь теперь может ставить режим ReadOnly'
         else:

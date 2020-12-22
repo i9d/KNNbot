@@ -6,6 +6,7 @@ import commands
 import random
 import telebot
 import time
+import capcha
 
 # подключение к боту
 bot = telebot.TeleBot(config.token)
@@ -131,19 +132,19 @@ def change_layout(message):
 
 
 # Выдача роли ReadOnly
-@bot.message_handler(commands=['giveRoleRO'])
+@bot.message_handler(commands=['giverolero'])
 def giveRoleRO(message):
     bot.reply_to(message, commands.canReadOnly(message))
 
 
 # Выдача роли Кик
-@bot.message_handler(commands=['giveRoleKick'])
+@bot.message_handler(commands=['giverolekick'])
 def giveRoleKick(message):
     bot.reply_to(message, commands.canKick(message))
 
 
 # Выдача роли Бан Медиа
-@bot.message_handler(commands=['giveRoleBanMedia'])
+@bot.message_handler(commands=['giverolebanmedia'])
 def giveRoleBanMedia(message):
     bot.reply_to(message, commands.canBanMedia(message))
 
@@ -157,103 +158,119 @@ def info(message):
 # Обработка /kick
 @bot.message_handler(commands=['kick'])
 def kick(message):
-    if commands.isRole(message.from_user.id, 'RoleKick'):
+    sndMsg = ''
+    if message.chat.type != 'private':
         if hasattr(message.reply_to_message, 'from_user'):
             user_id = message.reply_to_message.from_user.id
-        else:
-            result = 'Вы должны отправить команду ответом на сообщение'
-            return result
-        if not commands.isGOD(user_id) and user_id != message.from_user.id:
-            tmp = commands.kick(user_id)
-            if tmp == 1:
-                sndMsg = commands.getName(user_id) + ' кикнут'
-                bot.kick_chat_member(message.chat.id, user_id)
-            elif tmp == 0:
-                sndMsg = commands.getName(user_id) + ' пощажен'
+            if commands.isRoleKick(message.from_user.id):
+                if commands.isExistID(user_id):
+                    if not commands.isGOD(user_id) or user_id != message.from_user.id or user_id != '1313903888':
+                        tmp = commands.kick(user_id)
+                        if tmp == 1:
+                            sndMsg = commands.getName(user_id) + ' кикнут'
+                            bot.kick_chat_member(message.chat.id, user_id)
+                        elif tmp == 0:
+                            sndMsg = commands.getName(user_id) + ' пощажен'
+                    else:
+                        sndMsg = 'Попытка устроить переворот'
+                else:
+                    sndMsg = 'Пользователь не найден'
             else:
-                sndMsg = tmp
+                sndMsg = 'Недостаточно прав'
         else:
-            sndMsg = 'Ты кого кикать собрался, псина?'
+            sndMsg = 'Вы должны отправить команду ответом на сообщение'
     else:
-        sndMsg = 'Недостаточно прав'
+        sndMsg = 'Данная команда доступна в чате'
     bot.reply_to(message, sndMsg, parse_mode='MarkdownV2')
 
 
 # Обработка /banmedia_on
 @bot.message_handler(commands=['banmedia_on'])
 def banmedia_on(message):
-    if commands.isRole(message.from_user.id, 'RoleBanMedia'):
-        if hasattr(message.reply_to_message, 'from_user'):
-            user_id = message.reply_to_message.from_user.id
+    if message.chat.type != 'private':
+        if commands.isRoleBanMedia(message.from_user.id):
+            if hasattr(message.reply_to_message, 'from_user'):
+                user_id = message.reply_to_message.from_user.id
+            else:
+                result = 'Вы должны отправить команду ответом на сообщение'
+                return result
+            if not commands.isGOD(user_id) and user_id != message.from_user.id:
+                sndMsg = 'Медиа заблокированы для пользователя ' + commands.getName(user_id)
+                bot.restrict_chat_member(message.chat.id, user_id, can_send_media_messages=0, can_send_messages=1)
+                bot.delete_message(message.chat.id, message.reply_to_message.id)
+            else:
+                sndMsg = 'Попытка устроить переворот'
         else:
-            result = 'Вы должны отправить команду ответом на сообщение'
-            return result
-        if not commands.isGOD(user_id) and user_id != message.from_user.id:
-            sndMsg = 'Медиа заблокированы для пользователя ' + commands.getName(user_id)
-            bot.restrict_chat_member(message.chat.id, user_id, can_send_media_messages=0, can_send_messages=1)
-            bot.delete_message(message.chat.id, message.reply_to_message.id)
-        else:
-            sndMsg = 'Попытка устроить переворот'
+            sndMsg = 'Недостаточно прав'
     else:
-        sndMsg = 'Недостаточно прав'
+        sndMsg = 'Данная команда доступна в чате'
     bot.reply_to(message, sndMsg, parse_mode='MarkdownV2')
 
 
 # Обработка /banmedia_off
 @bot.message_handler(commands=['banmedia_off'])
 def banmedia_off(message):
-    if commands.isRole(message.from_user.id, 'RoleBanMedia'):
-        if hasattr(message.reply_to_message, 'from_user'):
-            user_id = message.reply_to_message.from_user.id
+    if message.chat.type != 'private':
+        if commands.isRoleBanMedia(message.from_user.id):
+            if hasattr(message.reply_to_message, 'from_user'):
+                user_id = message.reply_to_message.from_user.id
+            else:
+                result = 'Вы должны отправить команду ответом на сообщение'
+                return result
+            if not commands.isGOD(user_id) and user_id != message.from_user.id:
+                sndMsg = 'Медиа разблокированы для пользователя ' + commands.getName(user_id)
+                bot.restrict_chat_member(message.chat.id, user_id, can_send_media_messages=1, can_send_other_messages=1, can_add_web_page_previews=1)
+            else:
+                sndMsg = 'Попытка устроить переворот'
         else:
-            result = 'Вы должны отправить команду ответом на сообщение'
-            return result
-        if not commands.isGOD(user_id) and user_id != message.from_user.id:
-            sndMsg = 'Медиа разблокированы для пользователя ' + commands.getName(user_id)
-            bot.restrict_chat_member(message.chat.id, user_id, can_send_media_messages=1, can_send_other_messages=1, can_add_web_page_previews=1)
-        else:
-            sndMsg = 'Попытка устроить переворот'
+            sndMsg = 'Недостаточно прав'
     else:
-        sndMsg = 'Недостаточно прав'
+        sndMsg = 'Данная команда доступна в чате'
     bot.reply_to(message, sndMsg, parse_mode='MarkdownV2')
 
 # Обработка /readonly_on
 @bot.message_handler(commands=['readonly_on'])
 def readonly_on(message):
-    if commands.isRole(message.from_user.id, 'RoleReadOnly'):
-        if hasattr(message.reply_to_message, 'from_user'):
-            user_id = message.reply_to_message.from_user.id
+    if message.chat.type != 'private':
+        if commands.isRoleReadOnly(message.from_user.id):
+            if hasattr(message.reply_to_message, 'from_user'):
+                user_id = message.reply_to_message.from_user.id
+            else:
+                result = 'Вы должны отправить команду ответом на сообщение'
+                return result
+            if not commands.isGOD(user_id) and user_id != message.from_user.id:
+                bot.delete_message(message.chat.id, message.reply_to_message.message_id)
+                sndMsg = 'Включен режим ReadOnly для пользователя ' + commands.getName(user_id)
+                bot.restrict_chat_member(message.chat.id, user_id, can_send_messages=0)
+                bot.delete_message(message.chat.id, message.reply_to_message.id)
+            else:
+                sndMsg = 'Попытка устроить переворот'
         else:
-            result = 'Вы должны отправить команду ответом на сообщение'
-            return result
-        if not commands.isGOD(user_id) and user_id != message.from_user.id:
-            bot.delete_message(message.chat.id, message.reply_to_message.message_id)
-            sndMsg = 'Включен режим ReadOnly для пользователя ' + commands.getName(user_id)
-            bot.restrict_chat_member(message.chat.id, user_id, can_send_messages=0)
-            bot.delete_message(message.chat.id, message.reply_to_message.id)
-        else:
-            sndMsg = 'Попытка устроить переворот'
+            sndMsg = 'Недостаточно прав'
     else:
-        sndMsg = 'Недостаточно прав'
+        sndMsg = 'Данная команда доступна в чате'
     bot.reply_to(message, sndMsg, parse_mode='MarkdownV2')
 
 
 # Обработка /readonly_off
 @bot.message_handler(commands=['readonly_off'])
 def readonly_off(message):
-    if commands.isRole(message.from_user.id, 'RoleReadOnly'):
-        if hasattr(message.reply_to_message, 'from_user'):
-            user_id = message.reply_to_message.from_user.id
+    if message.chat.type != 'private':
+        if commands.isRoleReadOnly(message.from_user.id):
+            if hasattr(message.reply_to_message, 'from_user'):
+                user_id = message.reply_to_message.from_user.id
+            else:
+                result = 'Вы должны отправить команду ответом на сообщение'
+                return result
+            if not commands.isGOD(user_id) and user_id != message.from_user.id:
+                sndMsg = 'Выключен режим ReadOnly для пользователя ' + commands.getName(user_id)
+                bot.restrict_chat_member(message.chat.id, user_id, can_send_messages=1)
+            else:
+                sndMsg = 'Попытка устроить переворот'
         else:
-            result = 'Вы должны отправить команду ответом на сообщение'
-            return result
-        if not commands.isGOD(user_id) and user_id != message.from_user.id:
-            sndMsg = 'Выключен режим ReadOnly для пользователя ' + commands.getName(user_id)
-            bot.restrict_chat_member(message.chat.id, user_id, can_send_messages=1)
-        else:
-            sndMsg = 'Попытка устроить переворот'
+            sndMsg = 'Недостаточно прав'
     else:
-        sndMsg = 'Недостаточно прав'
+        sndMsg = 'Данная команда доступна в чате'
     bot.reply_to(message, sndMsg, parse_mode='MarkdownV2')
 
 
@@ -275,97 +292,117 @@ def get_text(message):
 
     # Обработка команды /reg
     if "/reg " in message.text:
-        sndMsg = commands.register(message)
-        bot.reply_to(message, sndMsg)
+        if message.chat.type == 'private':
+            commands.register(message, bot)
+        else:
+            sndMsg = 'Регистрация проходит в ЛС'
+            bot.reply_to(message, sndMsg)
+
 
     # Обработка основной части сообщений(только если пользователь зарегистрирован)
     elif commands.isExistID(message.from_user.id):
-        # Мат-фильтр, только для not IsGOD
-        commands.messageCounter(message.from_user.id)
-        if not commands.isGOD(message.from_user.id):
-            text = message.text.lower().replace(' ', '')
-            text = ''.join(text)
+        if commands.isActive(message.from_user.id):
+            # Мат-фильтр, только для not IsGOD
+            commands.messageCounter(message.from_user.id)
+            if not commands.isGOD(message.from_user.id):
+                text = message.text.lower().replace(' ', '')
+                text = ''.join(text)
 
-            for key, value in config.alphabet.items():
-                # Проходимся по каждой букве в значении словаря. То есть по вот этим спискам ['а', 'a', '@'].
-                for letter in value:
-                    # Проходимся по каждой букве в нашей фразе.
-                    for phr in text:
-                        # Если буква совпадает с буквой в нашем списке.
-                        if letter == phr:
-                            # Заменяем эту букву на ключ словаря.
-                            text = text.replace(phr, key)
+                for key, value in config.alphabet.items():
+                    # Проходимся по каждой букве в значении словаря. То есть по вот этим спискам ['а', 'a', '@'].
+                    for letter in value:
+                        # Проходимся по каждой букве в нашей фразе.
+                        for phr in text:
+                            # Если буква совпадает с буквой в нашем списке.
+                            if letter == phr:
+                                # Заменяем эту букву на ключ словаря.
+                                text = text.replace(phr, key)
 
-            text = [c for c in text if c in 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя- ']
-            text = ''.join(text)
-            print(text)
+                text = [c for c in text if c in 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя- ']
+                text = ''.join(text)
+                print(text)
 
-            # Обработка запрещенных сообщений
-            # if message.text in restricted_messages and message.chat.id == config.group_id:
-            # bad_words = open('bad_words', 'r')
-            for word in config.restricted_messages:
-                if word in text:
-                    # Удаление запрещенных сообщений
-                    points = commands.getPoint(message.from_user.id)
-                    ban_seconds = 604800 // ((points * points) + 1)
-                    warning_message = random.choice(config.warming_message_base2) + ' @' + \
-                                      str(message.from_user.username) + \
-                                      '!\n\nПусть теперь сидит и читает только целых ' +\
-                                      str(ban_seconds) + ' секунд!'
-                    bot.reply_to(message, warning_message)
-                    bot.delete_message(message.chat.id, message.message_id)
+                # Обработка запрещенных сообщений
+                # if message.text in restricted_messages and message.chat.id == config.group_id:
+                # bad_words = open('bad_words', 'r')
+                for word in config.restricted_messages:
+                    if word in text:
+                        # Удаление запрещенных сообщений
+                        points = commands.getPoint(message.from_user.id)
+                        ban_seconds = 604800 // ((points * points) + 1)
+                        warning_message = random.choice(config.warming_message_base2) + ' @' + \
+                                          str(message.from_user.username) + \
+                                          '!\n\nПусть теперь сидит и читает только целых ' +\
+                                          str(ban_seconds) + ' секунд!'
+                        bot.reply_to(message, warning_message)
+                        bot.delete_message(message.chat.id, message.message_id)
 
-                    ban_time = time.time() + ban_seconds
-                    bot.restrict_chat_member(message.chat.id, message.from_user.id, until_date=ban_time)
-                    print('Даю мут пользователю', message.from_user.username, ' на ', ban_seconds, ' секунд')
-                    commands.changePoints(message)
-                    commands.updateLastOffense(message)
-        # Обработка сообщения 'О проекте'
-        if message.text == 'О проекте':
-            about(message)
-        # Обработка сообщения 'Разработчики'
-        elif message.text == 'Разработчики':
-            developers_info(message)
+                        ban_time = time.time() + ban_seconds
+                        bot.restrict_chat_member(message.chat.id, message.from_user.id, until_date=ban_time)
+                        print('Даю мут пользователю', message.from_user.username, ' на ', ban_seconds, ' секунд')
+                        commands.changePoints(message)
+                        commands.updateLastOffense(message)
+            # Обработка сообщения 'О проекте'
+            if message.text == 'О проекте':
+                about(message)
+            # Обработка сообщения 'Разработчики'
+            elif message.text == 'Разработчики':
+                developers_info(message)
 
-    # Команды для GOD
+        # Команды для GOD
 
-        # Включение стикеров
-        elif message.text == '/sticker_on':
-            if commands.isGOD(message.from_user.id):
-                stickermode = 1
-                sndMsg = 'Стикеры включены'
+            # Включение стикеров
+            elif message.text == '/sticker_on':
+                if commands.isGOD(message.from_user.id):
+                    stickermode = 1
+                    sndMsg = 'Стикеры включены'
+                else:
+                    sndMsg = 'Недостаточно прав'
+                bot.reply_to(message, sndMsg)
+
+            # Выключение стикеров
+            elif message.text == '/sticker_off':
+                if commands.isGOD(message.from_user.id):
+                    stickermode = 0
+                    sndMsg = 'Стикеры выключены'
+                else:
+                    sndMsg = 'Недостаточно прав'
+                bot.reply_to(message, sndMsg)
+
+            # Удаление пользователя из БД
+            elif "/del" in message.text:
+                if commands.isGOD(message.from_user.id):
+                    sndMsg = commands.deleteUser(message)
+                else:
+                    sndMsg = 'Недостаточно прав'
+                bot.reply_to(message, sndMsg)
+
+            # Установить количество поинтов
+            elif "/setpoint" in message.text:
+                if commands.isGOD(message.from_user.id):
+                    sndMsg = commands.setPoint(message)
+                else:
+                    sndMsg = 'Недостаточно прав'
+                bot.reply_to(message, sndMsg)
+        else:
+            if message.chat.type == 'private':
+                if capcha.HashCapcha(message.text) == commands.getHash(message.from_user.id):
+                    sndMsg = "Ваша учетная запись успешно активирована\nТеперь вы можете писать в чат"
+                    commands.makeActive(message.from_user.id)
+                    bot.reply_to(message, sndMsg)
+                else:
+                    sndMsg = "Неверный ввод. Попробуйте еще раз"
+                    bot.reply_to(message, sndMsg)
+                    commands.updateCapcha(message, bot)
+
             else:
-                sndMsg = 'Недостаточно прав'
-            bot.reply_to(message, sndMsg)
-
-        # Выключение стикеров
-        elif message.text == '/sticker_off':
-            if commands.isGOD(message.from_user.id):
-                stickermode = 0
-                sndMsg = 'Стикеры выключены'
-            else:
-                sndMsg = 'Недостаточно прав'
-            bot.reply_to(message, sndMsg)
-
-        # Удаление пользователя из БД
-        elif "/del" in message.text:
-            if commands.isGOD(message.from_user.id):
-                sndMsg = commands.deleteUser(message)
-            else:
-                sndMsg = 'Недостаточно прав'
-            bot.reply_to(message, sndMsg)
-
-        # Установить количество поинтов
-        elif "/setpoint" in message.text:
-            if commands.isGOD(message.from_user.id):
-                sndMsg = commands.setPoint(message)
-            else:
-                sndMsg = 'Недостаточно прав'
-            bot.reply_to(message, sndMsg)
+                sndMsg = commands.getName(message.from_user.id) +  ", Ваша учетная запись не активирована. Активируйте, пройдя проверку в ЛС"
+                bot.reply_to(message, sndMsg, parse_mode='Markdown')
+                bot.delete_message(message.chat.id, message.message_id)
 
     # Если пользователя нет в БД
     else:
-        sndMsg = "Вы не зарегистрированы. Зарегистрируйтесь с помощью команды /reg [name]"
+        sndMsg = "@" + str(message.from_user.username) + ", Вы не зарегистрированы. Зарегистрируйтесь в личке с ботом с помощью /reg"
         bot.reply_to(message, sndMsg)
         bot.delete_message(message.chat.id, message.message_id)
 
