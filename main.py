@@ -409,3 +409,4 @@ def get_text(message):
 
 # Бот постоянно ждёт для себя сообщения
 bot.polling(none_stop=True)
+

@@ -28,8 +28,3 @@ def HashCapcha(capcha):
     str = capcha.lower().encode('utf-8')
     return hashlib.sha256(str).hexdigest()
 
-
-
-
-
-
